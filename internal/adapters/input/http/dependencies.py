@@ -15,7 +15,7 @@ token_header = HTTPBearer(auto_error=False)
 async def get_device_fingerprint(request: Request) -> str:
     user_agent = request.headers.get("user-agent", "")
     accept_lang = request.headers.get("accept-language", "")
-    ip_address = request.client.host
+    ip_address = request.client.host if request.client else "unknown"
     return f"{user_agent}|{accept_lang}|{ip_address}"
 
 

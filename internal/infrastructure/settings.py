@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     project_name: str = Field('auth', validation_alias='PROJECT_NAME')
 
     # Настройка JWT
-    jwt_secret_key: str = Field('', validation_alias='JWT_SECRET_KEY')
+    jwt_secret_key: str = Field(validation_alias='JWT_SECRET_KEY')
     jwt_algorithm: str = Field('HS256', validation_alias='JWT_ALGORITHM')
     jwt_access_token_expire_minutes: int = Field(
         30, validation_alias='JWT_ACCESS_TOKEN_EXPIRE_MINUTES'
@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     )
 
     # Настройки Postgres
+    echo_sql: bool = Field(False, validation_alias='ECHO_SQL')
     postgres_host: str = Field('127.0.0.1', validation_alias='POSTGRES_HOST')
     postgres_port: int = Field(5432, validation_alias='POSTGRES_PORT')
     postgres_db: str = Field('auth', validation_alias='POSTGRES_DB')

@@ -18,7 +18,6 @@ class CreateUserUseCase(CreateUserHandlerProtocol):
         self._password_hasher = password_hasher
 
     async def handle(self, command: CreateUser) -> User:
-        command.login = command.login.strip()
         command.first_name = command.first_name.strip()
         command.last_name = command.last_name.strip()
         hashed_password = self._password_hasher.hash_data(command.password)

@@ -1,19 +1,25 @@
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 
 # request
 
-class UserCreateRequest(BaseModel):
+class LoginRequest(BaseModel):
     login: str
+
+    @field_validator('login')
+    def normalize_login(cls, value: str) -> str:
+        return value.strip()
+
+
+class UserCreateRequest(LoginRequest):
     password: str
     first_name: str
     last_name: str
 
 
-class UserLoginRequest(BaseModel):
-    login: str
+class UserLoginRequest(LoginRequest):
     password: str
 
 
@@ -21,6 +27,10 @@ class UserUpdateRequest(BaseModel):
     current_password: str
     new_login: str
     new_password: str
+
+    @field_validator("new_login")
+    def normalize_new_login(cls, value: str) -> str:
+        return value.strip()
 
 
 class RoleAssignRequest(BaseModel):

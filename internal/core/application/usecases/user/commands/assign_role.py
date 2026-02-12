@@ -11,7 +11,6 @@ class AssignRoleUseCase(AssignRoleHandlerProtocol):
         self._uow = uow
 
     async def handle(self, command: AssignRole) -> User:
-        command.user_login = command.user_login.strip()
         async with self._uow:
             user = await self._uow.users.get_user_by_login(
                 command.user_login

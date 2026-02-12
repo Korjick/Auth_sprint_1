@@ -1,4 +1,6 @@
 from internal.core.domain.models.session.session import Session
+from internal.core.application.services.token_pair import \
+    TokenPairService
 from internal.pkg.errors import EntityNotFoundError, InvalidCredentialsError
 from internal.ports.input.user.login_user_handler import (
     LoginUserHandlerProtocol,
@@ -7,11 +9,6 @@ from internal.ports.input.user.login_user_handler import (
 )
 from internal.ports.output.hash_provider import HashProvider
 from internal.ports.output.session_repository import SessionCreate
-from internal.ports.output.token_provider import (
-    TokenProvider,
-    CreateTokenData,
-    UserTokenData,
-)
 from internal.ports.output.uow import UnitOfWork
 
 
@@ -20,14 +17,13 @@ class LoginUserUseCase(LoginUserHandlerProtocol):
             self,
             uow: UnitOfWork,
             password_hasher: HashProvider,
-            token_provider: TokenProvider,
+            token_pair_service: TokenPairService,
     ):
         self._uow = uow
         self._hasher = password_hasher
-        self._tokens = token_provider
+        self._token_pair_service = token_pair_service
 
     async def handle(self, command: LoginUser) -> LoggedInUser:
-        command.login = command.login.strip()
         async with self._uow:
             try:
                 user = await self._uow.users.get_user_by_login(command.login)
@@ -38,20 +34,7 @@ class LoginUserUseCase(LoginUserHandlerProtocol):
                     user.password_hash, command.password):
                 raise InvalidCredentialsError()
 
-            user_token = UserTokenData(
-                login=user.login,
-                roles=user.roles,
-                is_superuser=user.is_superuser,
-            )
-
-            access_token = self._tokens.create_token(
-                CreateTokenData(user=user_token, refresh=False)
-            )
-            refresh_token = self._tokens.create_token(
-                CreateTokenData(user=user_token, refresh=True)
-            )
-
-            decoded_refresh = self._tokens.decode_token(refresh_token)
+            token_pair = self._token_pair_service.create_for_user(user)
 
             # Find existing session for this device
             sessions = await self._uow.sessions.get_sessions_by_user_id(
@@ -67,19 +50,19 @@ class LoginUserUseCase(LoginUserHandlerProtocol):
                     oid=found_session.id,
                     user_id=found_session.user_id,
                     device_fingerprint=found_session.device_fingerprint,
-                    expire_at=decoded_refresh.exp,
-                    jti=decoded_refresh.jti,
+                    expire_at=token_pair.refresh_token.exp,
+                    jti=token_pair.refresh_token.jti,
                 ))
             else:
                 await self._uow.sessions.create_session(SessionCreate(
                     user_id=user.id,
                     device_fingerprint=command.device_fingerprint,
-                    expires_at=decoded_refresh.exp,
-                    jti=decoded_refresh.jti,
+                    expires_at=token_pair.refresh_token.exp,
+                    jti=token_pair.refresh_token.jti,
                 ))
             await self._uow.commit()
 
             return LoggedInUser(
-                access_session=access_token,
-                refresh_session=refresh_token,
+                access_session=token_pair.access_token.token,
+                refresh_session=token_pair.refresh_token.token,
             )

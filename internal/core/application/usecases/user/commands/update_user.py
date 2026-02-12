@@ -21,11 +21,8 @@ class UpdateUserUseCase(UpdateUserHandlerProtocol):
         if not command.new_login:
             raise ParamEmptyError(param="new_login")
 
-        if not not command.new_password:
+        if not command.new_password:
             raise ParamEmptyError(param="new_password")
-
-        command.login = command.login.strip()
-        command.new_login = command.new_login.strip()
 
         async with self._uow:
             user = await self._uow.users.get_user_by_login(command.login)

@@ -33,7 +33,7 @@ def _create_app(env_file: str = ".env") -> FastAPI:
            f'{settings.postgres_password}'
            f'@{settings.postgres_host}:{settings.postgres_port}'
            f'/{settings.postgres_db}')
-    db_engine = create_async_engine(dsn, echo=True, future=True)
+    db_engine = create_async_engine(dsn, echo=settings.echo_sql, future=True)
     db_session_factory = async_sessionmaker(db_engine, expire_on_commit=False)
 
     redis_client = Redis(

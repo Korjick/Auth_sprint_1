@@ -12,7 +12,6 @@ class LogoutAllUseCase(LogoutAllHandlerProtocol):
         self._tokens = token_provider
 
     async def handle(self, command: LogoutAll) -> None:
-        command.login = command.login.strip()
         async with self._uow:
             user = await self._uow.users.get_user_by_login(command.login)
             await self._uow.sessions.delete_by_user_id(user.id)

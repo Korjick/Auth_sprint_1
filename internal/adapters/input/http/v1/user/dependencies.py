@@ -22,6 +22,8 @@ from internal.core.application.usecases.user.commands.remove_role import \
     RemoveRoleUseCase
 from internal.core.application.usecases.user.commands.refresh_session import \
     RefreshSessionUseCase
+from internal.core.application.services.token_pair import \
+    TokenPairService
 from internal.core.application.usecases.user.queries.get_user_by_login import \
     GetUserByLoginUseCase
 from internal.core.application.usecases.user.queries.get_login_history import \
@@ -65,21 +67,27 @@ def get_user_by_login_handler(
     return GetUserByLoginUseCase(uow)
 
 
+def get_token_pair_service(
+        token_provider: TokenProvider = Depends(get_token_provider)) \
+        -> TokenPairService:
+    return TokenPairService(token_provider)
+
+
 def login_user_handler(
         uow: UnitOfWork = Depends(get_uow),
         password_hasher: HashProvider = Depends(get_hash_provider),
-        token_provider: TokenProvider = Depends(get_token_provider)
+        token_pair_service: TokenPairService = Depends(get_token_pair_service)
 ) -> LoginUserHandlerProtocol:
-    return LoginUserUseCase(uow, password_hasher, token_provider)
+    return LoginUserUseCase(uow, password_hasher, token_pair_service)
 
 
 def refresh_session_handler(
         uow: UnitOfWork = Depends(get_uow),
-        token_provider: TokenProvider = Depends(get_token_provider),
+        token_pair_service: TokenPairService = Depends(get_token_pair_service),
         time_provider: TimeProvider = Depends(get_time_provider),
 ) -> RefreshSessionHandlerProtocol:
     return RefreshSessionUseCase(
-        token_provider, uow, time_provider
+        token_pair_service, uow, time_provider
     )
 
 
