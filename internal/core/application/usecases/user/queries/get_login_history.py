@@ -12,8 +12,7 @@ class GetLoginHistoryUseCase(GetLoginHistoryHandlerProtocol):
 
     async def handle(self, query: GetLoginHistory) -> list[Session]:
         async with self._uow:
-            user = await self._uow.users.get_user_by_login(query.user.login)
             sessions = await self._uow.sessions.get_sessions_by_user_id(
-                user_id=user.id
+                user_id=query.user.user_id
             )
         return sorted(sessions, key=lambda item: item.expire_at, reverse=True)

@@ -87,7 +87,11 @@ def session_factory() -> Callable[..., Session]:
 @pytest.fixture
 def user_token_data_factory() -> Callable[..., UserTokenData]:
     def _factory(**overrides) -> UserTokenData:
-        defaults = dict(login="alice", roles=["subscriber"], is_superuser=False)
+        defaults = dict(
+            user_id=uuid.uuid4(),
+            roles=["subscriber"],
+            is_superuser=False,
+        )
         defaults.update(overrides)
         return UserTokenData(**defaults)
 

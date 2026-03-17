@@ -24,12 +24,16 @@ from internal.core.application.usecases.user.commands.refresh_session import \
     RefreshSessionUseCase
 from internal.core.application.services.token_pair import \
     TokenPairService
+from internal.core.application.usecases.user.queries.get_user_by_id import \
+    GetUserByIdUseCase
 from internal.core.application.usecases.user.queries.get_user_by_login import \
     GetUserByLoginUseCase
 from internal.core.application.usecases.user.queries.get_login_history import \
     GetLoginHistoryUseCase
 from internal.ports.input.user.create_user_handler import \
     CreateUserHandlerProtocol
+from internal.ports.input.user.get_user_by_id_handler import \
+    GetUserByIdHandlerProtocol
 from internal.ports.input.user.get_user_by_login_handler import \
     GetUserByLoginHandlerProtocol
 from internal.ports.input.user.login_user_handler import \
@@ -65,6 +69,12 @@ def get_user_by_login_handler(
         uow: UnitOfWork = Depends(get_uow),
 ) -> GetUserByLoginHandlerProtocol:
     return GetUserByLoginUseCase(uow)
+
+
+def get_user_by_id_handler(
+    uow: UnitOfWork = Depends(get_uow),
+) -> GetUserByIdHandlerProtocol:
+    return GetUserByIdUseCase(uow)
 
 
 def get_token_pair_service(

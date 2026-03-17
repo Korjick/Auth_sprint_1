@@ -1,3 +1,4 @@
+import uuid
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -6,7 +7,7 @@ from internal.core.domain.models.user.user import User
 
 @dataclass(kw_only=True)
 class UpdateUser:
-    login: str
+    user_id: uuid.UUID
     current_password: str
     new_login: str
     new_password: str

@@ -7,7 +7,7 @@ from internal.core.domain.models.user.user import User
 
 @dataclass(kw_only=True)
 class RemoveRole:
-    user_login: str
+    user_id: uuid.UUID
     role_id: uuid.UUID
 
 

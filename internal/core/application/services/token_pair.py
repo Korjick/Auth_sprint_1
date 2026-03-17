@@ -29,7 +29,7 @@ class TokenPairService:
 
     def create_for_user(self, user: User) -> TokenPair:
         user_token = UserTokenData(
-            login=user.login,
+            user_id=user.id,
             roles=user.roles,
             is_superuser=user.is_superuser,
         )

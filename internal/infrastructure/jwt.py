@@ -34,7 +34,7 @@ class PyJWTTokenProvider(TokenProvider):
         )
         payload = {
             'user': {
-                'login': token_data.user.login,
+                'user_id': str(token_data.user.user_id),
                 'roles': list(token_data.user.roles),
                 'is_superuser': token_data.user.is_superuser
             },
@@ -58,7 +58,7 @@ class PyJWTTokenProvider(TokenProvider):
                 algorithms=[self.algorithm],
             )
             user_data = token_data.pop('user')
-            user_data = UserTokenData(login=user_data['login'],
+            user_data = UserTokenData(user_id=uuid.UUID(user_data['user_id']),
                                       roles=user_data['roles'],
                                       is_superuser=user_data['is_superuser'])
             exp = self._time.from_timestamp(token_data.pop('exp'))

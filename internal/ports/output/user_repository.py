@@ -19,6 +19,9 @@ class UserRepository(Protocol):
     async def save_user(self, user_to_create: UserCreate) -> User:
         pass
 
+    async def get_user_by_id(self, user_id: uuid.UUID) -> User:
+        pass
+
     async def get_user_by_login(self, login: str) -> User:
         pass
 

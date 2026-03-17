@@ -5,7 +5,7 @@ import uuid
 
 @dataclass(kw_only=True)
 class LogoutAll:
-    login: str
+    user_id: uuid.UUID
     access_token_jti: uuid.UUID
 
 

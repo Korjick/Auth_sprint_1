@@ -25,7 +25,7 @@ class UpdateUserUseCase(UpdateUserHandlerProtocol):
             raise ParamEmptyError(param="new_password")
 
         async with self._uow:
-            user = await self._uow.users.get_user_by_login(command.login)
+            user = await self._uow.users.get_user_by_id(command.user_id)
 
             if not self._hash.verify_data(user.password_hash,
                                           command.current_password):

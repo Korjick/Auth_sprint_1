@@ -5,7 +5,7 @@ from typing import Protocol
 
 @dataclass(kw_only=True)
 class Logout:
-    login: str
+    user_id: uuid.UUID
     device_fingerprint: str
     access_token_jti: uuid.UUID
 

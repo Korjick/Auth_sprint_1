@@ -11,7 +11,7 @@ from internal.adapters.input.http.dependencies import (
 )
 from internal.adapters.input.http.v1.user.dependencies import (
     create_user_handler,
-    get_user_by_login_handler,
+    get_user_by_id_handler,
     login_user_handler,
     logout_handler,
     refresh_session_handler,
@@ -37,9 +37,9 @@ from internal.ports.input.user.create_user_handler import (
     CreateUser,
     CreateUserHandlerProtocol,
 )
-from internal.ports.input.user.get_user_by_login_handler import (
-    GetUserByLogin,
-    GetUserByLoginHandlerProtocol
+from internal.ports.input.user.get_user_by_id_handler import (
+    GetUserById,
+    GetUserByIdHandlerProtocol,
 )
 from internal.ports.input.user.login_user_handler import \
     LoginUserHandlerProtocol, LoginUser
@@ -159,7 +159,7 @@ async def logout(
 ):
     await logout_handler.handle(
         Logout(
-            login=user_details.user.login,
+            user_id=user_details.user.user_id,
             device_fingerprint=device_fingerprint,
             access_token_jti=user_details.jti,
         )
@@ -176,7 +176,7 @@ async def logout_all(
         ],
 ):
     await logout_all_handler.handle(
-        LogoutAll(login=user_details.user.login,
+        LogoutAll(user_id=user_details.user.user_id,
                   access_token_jti=user_details.jti)
     )
 
@@ -193,7 +193,7 @@ async def update_user(
 ) -> UserDetailResponse:
     user = await update_handler.handle(
         UpdateUser(
-            login=user_details.user.login,
+            user_id=user_details.user.user_id,
             current_password=user_update_request.current_password,
             new_login=user_update_request.new_login,
             new_password=user_update_request.new_password,
@@ -232,14 +232,14 @@ async def get_login_history(
 async def get_user_info(
         # deps
         get_user_handler: Annotated[
-            GetUserByLoginHandlerProtocol, Depends(get_user_by_login_handler)
+            GetUserByIdHandlerProtocol, Depends(get_user_by_id_handler)
         ],
         user_details: Annotated[
             DecodedTokenData, Depends(access_token_required)
         ],
 ) -> UserDetailResponse:
     user = await get_user_handler.handle(
-        GetUserByLogin(login=user_details.user.login)
+        GetUserById(user_id=user_details.user.user_id)
     )
     return UserDetailResponse(
         id=user.id,
@@ -249,9 +249,9 @@ async def get_user_info(
     )
 
 
-@router.post('/{login}/roles', response_model=UserRoleResponse)
+@router.post('/{user_id}/roles', response_model=UserRoleResponse)
 async def assign_role(
-        login: str,
+        user_id: UUID,
         role_request: RoleAssignRequest,
         handler: Annotated[
             AssignRoleHandlerProtocol, Depends(assign_role_handler)
@@ -259,15 +259,15 @@ async def assign_role(
         _: Annotated[DecodedTokenData, Depends(admin_only)],
 ) -> UserRoleResponse:
     user = await handler.handle(
-        AssignRole(user_login=login, role_id=role_request.role_id)
+        AssignRole(user_id=user_id, role_id=role_request.role_id)
     )
     return UserRoleResponse(login=user.login, roles=user.roles)
 
 
-@router.delete('/{login}/roles/{role_id}',
+@router.delete('/{user_id}/roles/{role_id}',
                response_model=UserRoleResponse)
 async def remove_role(
-        login: str,
+        user_id: UUID,
         role_id: UUID,
         handler: Annotated[
             RemoveRoleHandlerProtocol, Depends(remove_role_handler)
@@ -275,6 +275,6 @@ async def remove_role(
         _: Annotated[DecodedTokenData, Depends(admin_only)],
 ) -> UserRoleResponse:
     user = await handler.handle(
-        RemoveRole(user_login=login, role_id=role_id)
+        RemoveRole(user_id=user_id, role_id=role_id)
     )
     return UserRoleResponse(login=user.login, roles=user.roles)

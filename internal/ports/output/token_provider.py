@@ -6,7 +6,7 @@ from datetime import datetime
 
 @dataclass(kw_only=True)
 class UserTokenData:
-    login: str
+    user_id: uuid.UUID
     roles: typing.List[str]
     is_superuser: bool
 

@@ -17,9 +17,8 @@ class LogoutUserUseCase(LogoutHandlerProtocol):
 
     async def handle(self, command: Logout) -> None:
         async with self._uow:
-            user = await self._uow.users.get_user_by_login(command.login)
             await self._uow.sessions.delete_by_user_id_and_fingerprint(
-                user_id=user.id,
+                user_id=command.user_id,
                 device_fingerprint=command.device_fingerprint,
             )
             if command.access_token_jti:

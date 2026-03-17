@@ -32,8 +32,8 @@ class RefreshSessionUseCase(RefreshSessionHandlerProtocol):
                     refresh_session.device_fingerprint:
                 raise ForbiddenError()
 
-            user = await self._uow.users.get_user_by_login(
-                refresh_session.user.login
+            user = await self._uow.users.get_user_by_id(
+                refresh_session.user.user_id
             )
             token_pair = self._token_pair_service.create_for_user(user)
             session.jti = token_pair.refresh_token.jti

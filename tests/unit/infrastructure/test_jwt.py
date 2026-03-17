@@ -67,13 +67,13 @@ class TestDecodeToken:
     ):
         """Декодированный access-токен содержит корректные данные."""
         jwt_provider = token_provider_factory()
-        user = user_token_data_factory(login="bob", roles=["admin"])
+        user = user_token_data_factory(roles=["admin"])
         token = jwt_provider.create_token(
             CreateTokenData(user=user, refresh=False)
         )
 
         decoded = jwt_provider.decode_token(token)
-        assert decoded.user.login == "bob"
+        assert decoded.user.user_id == user.user_id
         assert decoded.user.roles == ["admin"]
         assert decoded.refresh is False
         assert isinstance(decoded.jti, uuid.UUID)

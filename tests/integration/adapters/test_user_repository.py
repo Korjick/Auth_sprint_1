@@ -92,6 +92,25 @@ class TestGetUserByLogin:
             await user_repo.get_user_by_login("nonexistent")
 
 
+class TestGetUserById:
+    """Тесты получения пользователя по UUID."""
+
+    @pytest.mark.asyncio
+    async def test_get_existing_user(self, user_repo):
+        """Существующий пользователь возвращается по UUID."""
+        created = await user_repo.save_user(_user_create(login="alice"))
+        user = await user_repo.get_user_by_id(created.id)
+
+        assert user.id == created.id
+        assert user.login == "alice"
+
+    @pytest.mark.asyncio
+    async def test_get_nonexistent_user_raises(self, user_repo):
+        """Несуществующий пользователь по UUID вызывает EntityNotFoundError."""
+        with pytest.raises(EntityNotFoundError):
+            await user_repo.get_user_by_id(uuid.uuid4())
+
+
 class TestUpdateLogin:
     """Тесты обновления логина."""
 

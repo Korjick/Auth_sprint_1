@@ -12,9 +12,7 @@ class AssignRoleUseCase(AssignRoleHandlerProtocol):
 
     async def handle(self, command: AssignRole) -> User:
         async with self._uow:
-            user = await self._uow.users.get_user_by_login(
-                command.user_login
-            )
-            user = await self._uow.users.add_role(user.id, command.role_id)
+            user = await self._uow.users.add_role(command.user_id,
+                                                  command.role_id)
             await self._uow.commit()
             return user

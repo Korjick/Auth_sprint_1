@@ -43,6 +43,17 @@ class PostgresUserRepository(UserRepository):
         await self._db_session.refresh(user, attribute_names=["roles"])
         return self._to_domain(user)
 
+    async def get_user_by_id(self, user_id: uuid.UUID) -> DomainUser:
+        result = await self._db_session.execute(
+            select(UserModel)
+            .options(selectinload(UserModel.roles))
+            .where(UserModel.id == user_id)
+        )
+        row = result.scalar_one_or_none()
+        if row is None:
+            raise EntityNotFoundError(param="id", key=str(user_id))
+        return self._to_domain(row)
+
     async def get_user_by_login(self, login: str) -> DomainUser:
         result = await self._db_session.execute(
             select(UserModel)
