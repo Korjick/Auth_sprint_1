@@ -1,4 +1,4 @@
-"""Initial
+﻿"""Initial
 
 Revision ID: dfafddc3b6e8
 Revises: 
@@ -11,7 +11,7 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 
-from internal.core.domain.models.role.role import ADMIN_ROLE_NAME
+from auth_api.internal.core.domain.models.role.role import ADMIN_ROLE_NAME
 
 revision: str = 'dfafddc3b6e8'
 down_revision: Union[str, Sequence[str], None] = None
@@ -76,3 +76,4 @@ def downgrade() -> None:
     op.drop_table('users', schema='service')
     op.drop_table('roles', schema='service')
     op.execute("DROP SCHEMA IF EXISTS service;")
+

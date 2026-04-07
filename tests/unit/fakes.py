@@ -1,11 +1,11 @@
-import datetime
+﻿import datetime
 
-from internal.ports.output.cache_provider import CacheProvider
-from internal.ports.output.time_provider import TimeProvider
+from auth_api.internal.ports.output.cache_provider import CacheProvider
+from auth_api.internal.ports.output.time_provider import TimeProvider
 
 
 class FakeCacheProvider(CacheProvider):
-    """In-memory заглушка для CacheProvider."""
+    """In-memory Р·Р°РіР»СѓС€РєР° РґР»СЏ CacheProvider."""
 
     def __init__(self):
         self._store: dict[str, str] = {}
@@ -19,7 +19,7 @@ class FakeCacheProvider(CacheProvider):
 
 
 class FakeTimeProvider(TimeProvider):
-    """Детерминированный TimeProvider для тестов."""
+    """Р”РµС‚РµСЂРјРёРЅРёСЂРѕРІР°РЅРЅС‹Р№ TimeProvider РґР»СЏ С‚РµСЃС‚РѕРІ."""
 
     def __init__(self, fixed_now: datetime.datetime | None = None):
         self._now = fixed_now or datetime.datetime.now(
@@ -30,3 +30,4 @@ class FakeTimeProvider(TimeProvider):
 
     def from_timestamp(self, timestamp: int | float) -> datetime.datetime:
         return datetime.datetime.fromtimestamp(timestamp).replace(tzinfo=None)
+

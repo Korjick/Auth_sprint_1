@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "auth-api-service"
+version = "0.1.0"
+description = "Auth API service"
+requires-python = ">=3.13"
+
+[project.scripts]
+auth-api = "auth_api.cmd.app.main:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["auth_api*"]

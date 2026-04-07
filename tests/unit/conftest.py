@@ -1,15 +1,15 @@
-import datetime
+﻿import datetime
 import uuid
 from collections.abc import Callable
 
 import pytest
 
-from internal.core.domain.models.role.role import Role, ADMIN_ROLE_NAME
-from internal.core.domain.models.session.session import Session
-from internal.core.domain.models.user.user import User
-from internal.infrastructure.jwt import PyJWTTokenProvider
-from internal.ports.output.cache_provider import CacheProvider
-from internal.ports.output.token_provider import TokenProvider, UserTokenData
+from auth_api.internal.core.domain.models.role.role import Role, ADMIN_ROLE_NAME
+from auth_api.internal.core.domain.models.session.session import Session
+from auth_api.internal.core.domain.models.user.user import User
+from auth_api.internal.infrastructure.jwt import PyJWTTokenProvider
+from auth_api.internal.ports.output.cache_provider import CacheProvider
+from auth_api.internal.ports.output.token_provider import TokenProvider, UserTokenData
 from tests.unit.fakes import FakeCacheProvider, FakeTimeProvider
 
 
@@ -96,3 +96,4 @@ def user_token_data_factory() -> Callable[..., UserTokenData]:
         return UserTokenData(**defaults)
 
     return _factory
+

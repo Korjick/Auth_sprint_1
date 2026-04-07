@@ -1,8 +1,8 @@
-from collections.abc import Callable
+﻿from collections.abc import Callable
 
-from internal.core.application.services.token_pair import TokenPairService
-from internal.core.domain.models.user.user import User
-from internal.ports.output.token_provider import TokenProvider
+from auth_api.internal.core.application.services.token_pair import TokenPairService
+from auth_api.internal.core.domain.models.user.user import User
+from auth_api.internal.ports.output.token_provider import TokenProvider
 
 
 def test_token_pair_decoded_data_vs_access_and_refresh_decoded_tokens(
@@ -24,3 +24,4 @@ def test_token_pair_decoded_data_vs_access_and_refresh_decoded_tokens(
     assert decoded_refresh.exp == token_pair.refresh_token.exp
 
     assert decoded_access.user == decoded_refresh.user
+
