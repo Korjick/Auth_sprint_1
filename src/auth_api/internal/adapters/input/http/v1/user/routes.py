@@ -1,75 +1,78 @@
-﻿from typing import Annotated
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
 
 from auth_api.internal.adapters.input.http.dependencies import (
-    admin_only,
-    refresh_token_required,
     access_token_required,
+    admin_only,
     get_device_fingerprint,
+    refresh_token_required,
 )
 from auth_api.internal.adapters.input.http.v1.user.dependencies import (
-    create_user_handler,
-    get_user_by_id_handler,
-    login_user_handler,
-    logout_handler,
-    refresh_session_handler,
-    update_user_handler,
-    logout_all_handler,
-    get_login_history_handler,
     assign_role_handler,
+    create_user_handler,
+    get_login_history_handler,
+    get_user_by_id_handler,
+    login_rate_limit,
+    login_user_handler,
+    logout_all_handler,
+    logout_handler,
+    refresh_rate_limit,
+    refresh_session_handler,
     remove_role_handler,
+    signup_rate_limit,
+    update_user_handler,
 )
 from auth_api.internal.adapters.input.http.v1.user.schemas import (
+    RefreshTokenResponse,
+    RoleAssignRequest,
+    SessionHistoryResponse,
     UserCreateRequest,
     UserCreateResponse,
     UserDetailResponse,
     UserLoginRequest,
     UserLoginResponse,
-    RefreshTokenResponse,
-    UserUpdateRequest,
-    SessionHistoryResponse,
-    RoleAssignRequest,
     UserRoleResponse,
+    UserUpdateRequest,
+)
+from auth_api.internal.ports.input.user.assign_role_handler import (
+    AssignRole,
+    AssignRoleHandlerProtocol,
 )
 from auth_api.internal.ports.input.user.create_user_handler import (
     CreateUser,
     CreateUserHandlerProtocol,
+)
+from auth_api.internal.ports.input.user.get_login_history_handler import (
+    GetLoginHistory,
+    GetLoginHistoryHandlerProtocol,
 )
 from auth_api.internal.ports.input.user.get_user_by_id_handler import (
     GetUserById,
     GetUserByIdHandlerProtocol,
 )
 from auth_api.internal.ports.input.user.login_user_handler import \
-    LoginUserHandlerProtocol, LoginUser
-from auth_api.internal.ports.input.user.logout_user_handler import (
-    Logout,
-    LogoutHandlerProtocol,
-)
+    LoginUser, LoginUserHandlerProtocol
 from auth_api.internal.ports.input.user.logout_all_handler import (
     LogoutAll,
     LogoutAllHandlerProtocol,
 )
-from auth_api.internal.ports.input.user.update_user_handler import (
-    UpdateUser,
-    UpdateUserHandlerProtocol,
+from auth_api.internal.ports.input.user.logout_user_handler import (
+    Logout,
+    LogoutHandlerProtocol,
 )
-from auth_api.internal.ports.input.user.get_login_history_handler import (
-    GetLoginHistory,
-    GetLoginHistoryHandlerProtocol,
-)
-from auth_api.internal.ports.input.user.assign_role_handler import (
-    AssignRole,
-    AssignRoleHandlerProtocol,
+from auth_api.internal.ports.input.user.refresh_session_handler import (
+    RefreshSession,
+    RefreshSessionHandlerProtocol,
 )
 from auth_api.internal.ports.input.user.remove_role_handler import (
     RemoveRole,
     RemoveRoleHandlerProtocol,
 )
-from auth_api.internal.ports.input.user.refresh_session_handler import (
-    RefreshSession,
-    RefreshSessionHandlerProtocol,
+from auth_api.internal.ports.input.user.update_user_handler import (
+    UpdateUser,
+    UpdateUserHandlerProtocol,
 )
 from auth_api.internal.ports.output.token_provider import DecodedTokenData
 
@@ -80,6 +83,7 @@ router = APIRouter(prefix='/user', tags=['Users'])
     '/signup',
     response_model=UserCreateResponse,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(signup_rate_limit)],
 )
 async def create_user(
         # params
@@ -103,7 +107,11 @@ async def create_user(
     )
 
 
-@router.post('/login', response_model=UserLoginResponse)
+@router.post(
+    '/login',
+    response_model=UserLoginResponse,
+    dependencies=[Depends(login_rate_limit)],
+)
 async def login_user(
         # params
         user_login_request: UserLoginRequest,
@@ -113,7 +121,7 @@ async def login_user(
         ],
         device_fingerprint: Annotated[
             str, Depends(get_device_fingerprint)
-        ]
+        ],
 ):
     data = await user_login_handler.handle(
         LoginUser(login=user_login_request.login,
@@ -123,7 +131,11 @@ async def login_user(
                              refresh_token=data.refresh_session)
 
 
-@router.post('/refresh', response_model=RefreshTokenResponse)
+@router.post(
+    '/refresh',
+    response_model=RefreshTokenResponse,
+    dependencies=[Depends(refresh_rate_limit)],
+)
 async def refresh_token(
         # deps
         user_details: Annotated[
@@ -134,7 +146,7 @@ async def refresh_token(
         ],
         device_fingerprint: Annotated[
             str, Depends(get_device_fingerprint)
-        ]
+        ],
 ):
     result = await refresh_handler.handle(
         RefreshSession(user=user_details.user,
@@ -278,4 +290,3 @@ async def remove_role(
         RemoveRole(user_id=user_id, role_id=role_id)
     )
     return UserRoleResponse(login=user.login, roles=user.roles)
-

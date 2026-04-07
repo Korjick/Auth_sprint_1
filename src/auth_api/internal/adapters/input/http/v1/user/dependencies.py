@@ -1,60 +1,71 @@
-﻿from fastapi import Depends
+from typing import Annotated
+
+from fastapi import Depends, Request
 
 from auth_api.internal.adapters.input.dependencies import (
-    get_uow,
     get_hash_provider,
-    get_token_provider,
+    get_rate_limiter,
     get_time_provider,
+    get_token_provider,
+    get_uow,
 )
-from auth_api.internal.core.application.usecases.user.commands.login_user import \
-    LoginUserUseCase
-from auth_api.internal.core.application.usecases.user.commands.create_user import \
-    CreateUserUseCase
-from auth_api.internal.core.application.usecases.user.commands.logout_user import \
-    LogoutUserUseCase
-from auth_api.internal.core.application.usecases.user.commands.logout_all import \
-    LogoutAllUseCase
-from auth_api.internal.core.application.usecases.user.commands.update_user import \
-    UpdateUserUseCase
-from auth_api.internal.core.application.usecases.user.commands.assign_role import \
-    AssignRoleUseCase
-from auth_api.internal.core.application.usecases.user.commands.remove_role import \
-    RemoveRoleUseCase
-from auth_api.internal.core.application.usecases.user.commands.refresh_session import \
-    RefreshSessionUseCase
+from auth_api.internal.adapters.input.http.dependencies import (
+    refresh_token_required, enforce_limit,
+)
+from auth_api.internal.adapters.input.http.v1.user.schemas import UserLoginRequest
 from auth_api.internal.core.application.services.token_pair import \
     TokenPairService
+from auth_api.internal.core.application.usecases.user.commands.assign_role import \
+    AssignRoleUseCase
+from auth_api.internal.core.application.usecases.user.commands.create_user import \
+    CreateUserUseCase
+from auth_api.internal.core.application.usecases.user.commands.login_user import \
+    LoginUserUseCase
+from auth_api.internal.core.application.usecases.user.commands.logout_all import \
+    LogoutAllUseCase
+from auth_api.internal.core.application.usecases.user.commands.logout_user import \
+    LogoutUserUseCase
+from auth_api.internal.core.application.usecases.user.commands.refresh_session import \
+    RefreshSessionUseCase
+from auth_api.internal.core.application.usecases.user.commands.remove_role import \
+    RemoveRoleUseCase
+from auth_api.internal.core.application.usecases.user.commands.update_user import \
+    UpdateUserUseCase
+from auth_api.internal.core.application.usecases.user.queries.get_login_history import \
+    GetLoginHistoryUseCase
 from auth_api.internal.core.application.usecases.user.queries.get_user_by_id import \
     GetUserByIdUseCase
 from auth_api.internal.core.application.usecases.user.queries.get_user_by_login import \
     GetUserByLoginUseCase
-from auth_api.internal.core.application.usecases.user.queries.get_login_history import \
-    GetLoginHistoryUseCase
+from auth_api.internal.ports.input.user.assign_role_handler import \
+    AssignRoleHandlerProtocol
 from auth_api.internal.ports.input.user.create_user_handler import \
     CreateUserHandlerProtocol
+from auth_api.internal.ports.input.user.get_login_history_handler import \
+    GetLoginHistoryHandlerProtocol
 from auth_api.internal.ports.input.user.get_user_by_id_handler import \
     GetUserByIdHandlerProtocol
 from auth_api.internal.ports.input.user.get_user_by_login_handler import \
     GetUserByLoginHandlerProtocol
 from auth_api.internal.ports.input.user.login_user_handler import \
     LoginUserHandlerProtocol
+from auth_api.internal.ports.input.user.logout_all_handler import \
+    LogoutAllHandlerProtocol
 from auth_api.internal.ports.input.user.logout_user_handler import \
     LogoutHandlerProtocol
 from auth_api.internal.ports.input.user.refresh_session_handler import \
     RefreshSessionHandlerProtocol
-from auth_api.internal.ports.input.user.logout_all_handler import \
-    LogoutAllHandlerProtocol
-from auth_api.internal.ports.input.user.update_user_handler import \
-    UpdateUserHandlerProtocol
-from auth_api.internal.ports.input.user.get_login_history_handler import \
-    GetLoginHistoryHandlerProtocol
-from auth_api.internal.ports.input.user.assign_role_handler import \
-    AssignRoleHandlerProtocol
 from auth_api.internal.ports.input.user.remove_role_handler import \
     RemoveRoleHandlerProtocol
+from auth_api.internal.ports.input.user.update_user_handler import \
+    UpdateUserHandlerProtocol
 from auth_api.internal.ports.output.hash_provider import HashProvider
+from auth_api.internal.ports.output.rate_limiter import RateLimiter
 from auth_api.internal.ports.output.time_provider import TimeProvider
-from auth_api.internal.ports.output.token_provider import TokenProvider
+from auth_api.internal.ports.output.token_provider import (
+    DecodedTokenData,
+    TokenProvider,
+)
 from auth_api.internal.ports.output.uow import UnitOfWork
 
 
@@ -139,3 +150,70 @@ def remove_role_handler(
 ) -> RemoveRoleHandlerProtocol:
     return RemoveRoleUseCase(uow)
 
+
+async def signup_rate_limit(
+    request: Request,
+    limiter: Annotated[
+        RateLimiter, Depends(get_rate_limiter)
+    ],
+) -> None:
+    config = limiter.config
+    if not config.enabled:
+        return
+    await enforce_limit(
+        limiter=limiter,
+        bucket="signup_ip",
+        identifier=request.client.host if request.client else "unknown",
+        limit=config.signup_ip.limit,
+        window_sec=config.signup_ip.window_sec,
+    )
+
+
+async def login_rate_limit(
+    request: Request,
+    user_login_request: UserLoginRequest,
+    limiter: Annotated[
+        RateLimiter, Depends(get_rate_limiter)
+    ],
+) -> None:
+    config = limiter.config
+    if not config.enabled:
+        return
+
+    client_ip = request.client.host if request.client else "unknown"
+    login_key = user_login_request.login.strip().lower() or "unknown"
+    await enforce_limit(
+        limiter=limiter,
+        bucket="login_ip",
+        identifier=client_ip,
+        limit=config.login_ip.limit,
+        window_sec=config.login_ip.window_sec,
+    )
+    await enforce_limit(
+        limiter=limiter,
+        bucket="login_key_ip",
+        identifier=f"{login_key}:{client_ip}",
+        limit=config.login_key_ip.limit,
+        window_sec=config.login_key_ip.window_sec,
+    )
+
+
+async def refresh_rate_limit(
+    user_details: Annotated[
+        DecodedTokenData, Depends(refresh_token_required)
+    ],
+    limiter: Annotated[
+        RateLimiter, Depends(get_rate_limiter)
+    ],
+) -> None:
+    config = limiter.config
+    if not config.enabled:
+        return
+
+    await enforce_limit(
+        limiter=limiter,
+        bucket="refresh_user",
+        identifier=str(user_details.user.user_id),
+        limit=config.refresh_user.limit,
+        window_sec=config.refresh_user.window_sec,
+    )

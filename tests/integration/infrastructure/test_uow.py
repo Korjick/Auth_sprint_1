@@ -1,4 +1,4 @@
-﻿import pytest
+import pytest
 import pytest_asyncio
 from sqlalchemy import text
 
@@ -10,7 +10,7 @@ from auth_api.internal.pkg.errors import EntityNotFoundError
 
 @pytest_asyncio.fixture(autouse=True)
 async def _clean_tables(db_session):
-    """РћС‡РёСЃС‚РєР° С‚Р°Р±Р»РёС† РїРѕСЃР»Рµ РєР°Р¶РґРѕРіРѕ С‚РµСЃС‚Р°."""
+    """Cleanup tables after each test."""
     yield
     await db_session.execute(text("DELETE FROM service.user_roles"))
     await db_session.execute(text("DELETE FROM service.sessions"))
@@ -20,11 +20,11 @@ async def _clean_tables(db_session):
 
 
 class TestUnitOfWork:
-    """РўРµСЃС‚С‹ РµРґРёРЅРёС†С‹ СЂР°Р±РѕС‚С‹ (UoW) СЃ СЂРµР°Р»СЊРЅРѕР№ Р‘Р”."""
+    """Unit of Work integration tests with a real database."""
 
     @pytest.mark.asyncio
     async def test_commit_persists_data(self, db_session_factory):
-        """Р”Р°РЅРЅС‹Рµ СЃРѕС…СЂР°РЅСЏСЋС‚СЃСЏ РїРѕСЃР»Рµ commit."""
+        """Data is persisted after commit."""
         uow = SqlAlchemyUnitOfWork(db_session_factory)
 
         async with uow:
@@ -37,14 +37,13 @@ class TestUnitOfWork:
             ))
             await uow.commit()
 
-        # РџСЂРѕРІРµСЂСЏРµРј РІ РЅРѕРІРѕР№ СЃРµСЃСЃРёРё
         async with uow:
             user = await uow.users.get_user_by_login("uow_user")
             assert user.login == "uow_user"
 
     @pytest.mark.asyncio
     async def test_rollback_discards_data(self, db_session_factory):
-        """Р”Р°РЅРЅС‹Рµ РЅРµ СЃРѕС…СЂР°РЅСЏСЋС‚СЃСЏ РїРѕСЃР»Рµ rollback."""
+        """Data is not persisted after rollback."""
         uow = SqlAlchemyUnitOfWork(db_session_factory)
 
         async with uow:
@@ -63,7 +62,7 @@ class TestUnitOfWork:
 
     @pytest.mark.asyncio
     async def test_exception_triggers_rollback(self, db_session_factory):
-        """РСЃРєР»СЋС‡РµРЅРёРµ РІРЅСѓС‚СЂРё РєРѕРЅС‚РµРєСЃС‚РЅРѕРіРѕ РјРµРЅРµРґР¶РµСЂР° РѕС‚РєР°С‚С‹РІР°РµС‚ С‚СЂР°РЅР·Р°РєС†РёСЋ."""
+        """Exception inside context manager triggers rollback."""
         uow = SqlAlchemyUnitOfWork(db_session_factory)
 
         with pytest.raises(ValueError):
@@ -83,7 +82,7 @@ class TestUnitOfWork:
 
     @pytest.mark.asyncio
     async def test_uow_exposes_all_repositories(self, db_session_factory):
-        """UoW РїСЂРµРґРѕСЃС‚Р°РІР»СЏРµС‚ РґРѕСЃС‚СѓРї Рє users, sessions Рё roles."""
+        """UoW exposes users, sessions and roles repositories."""
         uow = SqlAlchemyUnitOfWork(db_session_factory)
 
         async with uow:
@@ -93,14 +92,13 @@ class TestUnitOfWork:
 
     @pytest.mark.asyncio
     async def test_create_role_through_uow(self, db_session_factory):
-        """Р РѕР»СЊ СЃРѕР·РґР°С‘С‚СЃСЏ Рё РёР·РІР»РµРєР°РµС‚СЃСЏ С‡РµСЂРµР· UoW."""
+        """Role can be created and fetched through UoW."""
         uow = SqlAlchemyUnitOfWork(db_session_factory)
 
         async with uow:
-            role = await uow.roles.create_role(RoleCreate(name="testrole"))
+            await uow.roles.create_role(RoleCreate(name="testrole"))
             await uow.commit()
 
         async with uow:
             roles = await uow.roles.list_roles()
             assert any(r.name == "testrole" for r in roles)
-

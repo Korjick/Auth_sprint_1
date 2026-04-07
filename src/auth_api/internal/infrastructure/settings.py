@@ -1,6 +1,6 @@
 ﻿from pathlib import Path
 
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings
 
 
@@ -41,12 +41,14 @@ class Settings(BaseSettings):
 
     # Настройки OpenTelemetry (traces)
     otel_enabled: bool = Field(False, validation_alias='OTEL_ENABLED')
-    otel_service_name: str = Field('auth-api', validation_alias='OTEL_SERVICE_NAME')
+    otel_service_name: str = Field('auth-api',
+                                   validation_alias='OTEL_SERVICE_NAME')
     otel_service_version: str = Field(
         '0.1.0',
         validation_alias='OTEL_SERVICE_VERSION',
     )
-    otel_environment: str = Field('development', validation_alias='OTEL_ENVIRONMENT')
+    otel_environment: str = Field('development',
+                                  validation_alias='OTEL_ENVIRONMENT')
     otel_exporter_otlp_endpoint: str = Field(
         'http://127.0.0.1:4317',
         validation_alias='OTEL_EXPORTER_OTLP_ENDPOINT',
@@ -54,6 +56,56 @@ class Settings(BaseSettings):
     otel_exporter_otlp_insecure: bool = Field(
         True,
         validation_alias='OTEL_EXPORTER_OTLP_INSECURE',
+    )
+
+    # Настройки rate limit
+    rate_limit_enabled: bool = Field(
+        True,
+        validation_alias='RATE_LIMIT_ENABLED'
+    )
+    rate_limit_fail_open: bool = Field(
+        True,
+        validation_alias='RATE_LIMIT_FAIL_OPEN'
+    )
+    rate_limit_api_ip_limit: int = Field(
+        300,
+        validation_alias='RATE_LIMIT_API_IP_LIMIT',
+    )
+    rate_limit_api_ip_window_sec: int = Field(
+        60,
+        validation_alias='RATE_LIMIT_API_IP_WINDOW_SEC',
+    )
+    rate_limit_signup_ip_limit: int = Field(
+        10,
+        validation_alias='RATE_LIMIT_SIGNUP_IP_LIMIT',
+    )
+    rate_limit_signup_ip_window_sec: int = Field(
+        60,
+        validation_alias='RATE_LIMIT_SIGNUP_IP_WINDOW_SEC',
+    )
+    rate_limit_login_ip_limit: int = Field(
+        30,
+        validation_alias='RATE_LIMIT_LOGIN_IP_LIMIT',
+    )
+    rate_limit_login_ip_window_sec: int = Field(
+        60,
+        validation_alias='RATE_LIMIT_LOGIN_IP_WINDOW_SEC',
+    )
+    rate_limit_login_key_ip_limit: int = Field(
+        5,
+        validation_alias='RATE_LIMIT_LOGIN_KEY_IP_LIMIT',
+    )
+    rate_limit_login_key_ip_window_sec: int = Field(
+        60,
+        validation_alias='RATE_LIMIT_LOGIN_KEY_IP_WINDOW_SEC',
+    )
+    rate_limit_refresh_user_limit: int = Field(
+        30,
+        validation_alias='RATE_LIMIT_REFRESH_USER_LIMIT',
+    )
+    rate_limit_refresh_user_window_sec: int = Field(
+        60,
+        validation_alias='RATE_LIMIT_REFRESH_USER_WINDOW_SEC',
     )
 
     @classmethod

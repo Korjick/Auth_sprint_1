@@ -10,7 +10,7 @@ from auth_api.internal.core.domain.models.user.user import User
 from auth_api.internal.infrastructure.jwt import PyJWTTokenProvider
 from auth_api.internal.ports.output.cache_provider import CacheProvider
 from auth_api.internal.ports.output.token_provider import TokenProvider, UserTokenData
-from tests.unit.fakes import FakeCacheProvider, FakeTimeProvider
+from tests.unit.fakes import FakeTimeProvider, FakeCacheProvider
 
 
 @pytest.fixture

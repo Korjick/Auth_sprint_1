@@ -1,4 +1,4 @@
-﻿import uuid
+import uuid
 
 import pytest
 import pytest_asyncio
@@ -17,19 +17,19 @@ from auth_api.internal.pkg.errors import EntityNotFoundError
 
 @pytest_asyncio.fixture
 async def user_repo(db_session):
-    """Р РµРїРѕР·РёС‚РѕСЂРёР№ РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№ СЃ С‚РµСЃС‚РѕРІРѕР№ СЃРµСЃСЃРёРµР№."""
+    """Репозиторий пользователей с тестовой сессией."""
     return PostgresUserRepository(db_session)
 
 
 @pytest_asyncio.fixture
 async def role_repo(db_session):
-    """Р РµРїРѕР·РёС‚РѕСЂРёР№ СЂРѕР»РµР№ СЃ С‚РµСЃС‚РѕРІРѕР№ СЃРµСЃСЃРёРµР№."""
+    """Репозиторий ролей с тестовой сессией."""
     return PostgresRoleRepository(db_session)
 
 
 @pytest_asyncio.fixture(autouse=True)
 async def _clean_tables(db_session):
-    """РћС‡РёСЃС‚РєР° С‚Р°Р±Р»РёС† РїРµСЂРµРґ РєР°Р¶РґС‹Рј С‚РµСЃС‚РѕРј."""
+    """Очистка таблиц перед каждым тестом."""
     yield
     await db_session.execute(text("DELETE FROM service.user_roles"))
     await db_session.execute(text("DELETE FROM service.sessions"))
@@ -52,11 +52,11 @@ def _user_create(**overrides) -> UserCreate:
 
 
 class TestSaveUser:
-    """РўРµСЃС‚С‹ СЃРѕР·РґР°РЅРёСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РІ Р‘Р”."""
+    """Тесты создания пользователя в БД."""
 
     @pytest.mark.asyncio
     async def test_save_user_returns_domain_user(self, user_repo):
-        """save_user РІРѕР·РІСЂР°С‰Р°РµС‚ РґРѕРјРµРЅРЅСѓСЋ РјРѕРґРµР»СЊ User."""
+        """save_user возвращает доменную модель User."""
         user = await user_repo.save_user(_user_create())
 
         assert user.login == "testuser"
@@ -67,7 +67,7 @@ class TestSaveUser:
 
     @pytest.mark.asyncio
     async def test_save_superuser(self, user_repo):
-        """РЎСѓРїРµСЂРїРѕР»СЊР·РѕРІР°С‚РµР»СЊ СЃРѕС…СЂР°РЅСЏРµС‚СЃСЏ СЃ С„Р»Р°РіРѕРј is_superuser=True."""
+        """Суперпользователь сохраняется с флагом is_superuser=True."""
         user = await user_repo.save_user(
             _user_create(login="super", is_superuser=True)
         )
@@ -75,11 +75,11 @@ class TestSaveUser:
 
 
 class TestGetUserByLogin:
-    """РўРµСЃС‚С‹ РїРѕР»СѓС‡РµРЅРёСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РїРѕ Р»РѕРіРёРЅСѓ."""
+    """Тесты получения пользователя по логину."""
 
     @pytest.mark.asyncio
     async def test_get_existing_user(self, user_repo):
-        """РЎСѓС‰РµСЃС‚РІСѓСЋС‰РёР№ РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ РІРѕР·РІСЂР°С‰Р°РµС‚СЃСЏ РїРѕ Р»РѕРіРёРЅСѓ."""
+        """Существующий пользователь возвращается по логину."""
         await user_repo.save_user(_user_create(login="alice"))
         user = await user_repo.get_user_by_login("alice")
 
@@ -87,17 +87,17 @@ class TestGetUserByLogin:
 
     @pytest.mark.asyncio
     async def test_get_nonexistent_user_raises(self, user_repo):
-        """РќРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№ РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ РІС‹Р·С‹РІР°РµС‚ EntityNotFoundError."""
+        """Несуществующий пользователь вызывает EntityNotFoundError."""
         with pytest.raises(EntityNotFoundError):
             await user_repo.get_user_by_login("nonexistent")
 
 
 class TestGetUserById:
-    """РўРµСЃС‚С‹ РїРѕР»СѓС‡РµРЅРёСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РїРѕ UUID."""
+    """Тесты получения пользователя по UUID."""
 
     @pytest.mark.asyncio
     async def test_get_existing_user(self, user_repo):
-        """РЎСѓС‰РµСЃС‚РІСѓСЋС‰РёР№ РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ РІРѕР·РІСЂР°С‰Р°РµС‚СЃСЏ РїРѕ UUID."""
+        """Существующий пользователь возвращается по UUID."""
         created = await user_repo.save_user(_user_create(login="alice"))
         user = await user_repo.get_user_by_id(created.id)
 
@@ -106,17 +106,17 @@ class TestGetUserById:
 
     @pytest.mark.asyncio
     async def test_get_nonexistent_user_raises(self, user_repo):
-        """РќРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№ РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ РїРѕ UUID РІС‹Р·С‹РІР°РµС‚ EntityNotFoundError."""
+        """Несуществующий пользователь по UUID вызывает EntityNotFoundError."""
         with pytest.raises(EntityNotFoundError):
             await user_repo.get_user_by_id(uuid.uuid4())
 
 
 class TestUpdateLogin:
-    """РўРµСЃС‚С‹ РѕР±РЅРѕРІР»РµРЅРёСЏ Р»РѕРіРёРЅР°."""
+    """Тесты обновления логина."""
 
     @pytest.mark.asyncio
     async def test_update_login_success(self, user_repo):
-        """Р›РѕРіРёРЅ РѕР±РЅРѕРІР»СЏРµС‚СЃСЏ Рё РІРѕР·РІСЂР°С‰Р°РµС‚СЃСЏ РѕР±РЅРѕРІР»С‘РЅРЅС‹Р№ User."""
+        """Логин обновляется и возвращается обновлённый User."""
         user = await user_repo.save_user(_user_create(login="old_login"))
         updated = await user_repo.update_login(user.id, "new_login")
 
@@ -125,17 +125,17 @@ class TestUpdateLogin:
 
     @pytest.mark.asyncio
     async def test_update_login_nonexistent_user(self, user_repo):
-        """РћР±РЅРѕРІР»РµРЅРёРµ Р»РѕРіРёРЅР° РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РµРіРѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РІС‹Р·С‹РІР°РµС‚ РѕС€РёР±РєСѓ."""
+        """Обновление логина несуществующего пользователя вызывает ошибку."""
         with pytest.raises(EntityNotFoundError):
             await user_repo.update_login(uuid.uuid4(), "new_login")
 
 
 class TestUpdatePassword:
-    """РўРµСЃС‚С‹ РѕР±РЅРѕРІР»РµРЅРёСЏ РїР°СЂРѕР»СЏ."""
+    """Тесты обновления пароля."""
 
     @pytest.mark.asyncio
     async def test_update_password_success(self, user_repo):
-        """РџР°СЂРѕР»СЊ РѕР±РЅРѕРІР»СЏРµС‚СЃСЏ Рё РІРѕР·РІСЂР°С‰Р°РµС‚СЃСЏ РѕР±РЅРѕРІР»С‘РЅРЅС‹Р№ User."""
+        """Пароль обновляется и возвращается обновлённый User."""
         user = await user_repo.save_user(_user_create())
         updated = await user_repo.update_password(user.id, "new_hash")
 
@@ -143,17 +143,17 @@ class TestUpdatePassword:
 
     @pytest.mark.asyncio
     async def test_update_password_nonexistent_user(self, user_repo):
-        """РћР±РЅРѕРІР»РµРЅРёРµ РїР°СЂРѕР»СЏ РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РµРіРѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РІС‹Р·С‹РІР°РµС‚ РѕС€РёР±РєСѓ."""
+        """Обновление пароля несуществующего пользователя вызывает ошибку."""
         with pytest.raises(EntityNotFoundError):
             await user_repo.update_password(uuid.uuid4(), "new_hash")
 
 
 class TestUserRoles:
-    """РўРµСЃС‚С‹ РЅР°Р·РЅР°С‡РµРЅРёСЏ Рё СѓРґР°Р»РµРЅРёСЏ СЂРѕР»РµР№ Сѓ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ."""
+    """Тесты назначения и удаления ролей у пользователя."""
 
     @pytest.mark.asyncio
     async def test_add_role_to_user(self, user_repo, role_repo):
-        """Р РѕР»СЊ РґРѕР±Р°РІР»СЏРµС‚СЃСЏ Рє РїРѕР»СЊР·РѕРІР°С‚РµР»СЋ."""
+        """Роль добавляется к пользователю."""
         user = await user_repo.save_user(_user_create(login="role_user"))
         role = await role_repo.create_role(RoleCreate(name="editor"))
 
@@ -163,7 +163,7 @@ class TestUserRoles:
     @pytest.mark.asyncio
     async def test_add_same_role_twice_is_idempotent(
             self, user_repo, role_repo):
-        """РџРѕРІС‚РѕСЂРЅРѕРµ РґРѕР±Р°РІР»РµРЅРёРµ С‚РѕР№ Р¶Рµ СЂРѕР»Рё РЅРµ СЃРѕР·РґР°С‘С‚ РґСѓР±Р»РёРєР°С‚."""
+        """Повторное добавление той же роли не создаёт дубликат."""
         user = await user_repo.save_user(
             _user_create(login="idem_user"))
         role = await role_repo.create_role(RoleCreate(name="viewer"))
@@ -174,7 +174,7 @@ class TestUserRoles:
 
     @pytest.mark.asyncio
     async def test_remove_role_from_user(self, user_repo, role_repo):
-        """Р РѕР»СЊ СѓРґР°Р»СЏРµС‚СЃСЏ Сѓ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ."""
+        """Роль удаляется у пользователя."""
         user = await user_repo.save_user(
             _user_create(login="rm_role_user"))
         role = await role_repo.create_role(RoleCreate(name="temp"))
@@ -185,14 +185,14 @@ class TestUserRoles:
 
     @pytest.mark.asyncio
     async def test_add_role_nonexistent_user(self, user_repo, role_repo):
-        """Р”РѕР±Р°РІР»РµРЅРёРµ СЂРѕР»Рё РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РµРјСѓ РїРѕР»СЊР·РѕРІР°С‚РµР»СЋ РІС‹Р·С‹РІР°РµС‚ РѕС€РёР±РєСѓ."""
+        """Добавление роли несуществующему пользователю вызывает ошибку."""
         role = await role_repo.create_role(RoleCreate(name="nouser"))
         with pytest.raises(EntityNotFoundError):
             await user_repo.add_role(uuid.uuid4(), role.id)
 
     @pytest.mark.asyncio
     async def test_add_nonexistent_role(self, user_repo):
-        """Р”РѕР±Р°РІР»РµРЅРёРµ РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РµР№ СЂРѕР»Рё РІС‹Р·С‹РІР°РµС‚ РѕС€РёР±РєСѓ."""
+        """Добавление несуществующей роли вызывает ошибку."""
         user = await user_repo.save_user(
             _user_create(login="norole_user"))
         with pytest.raises(EntityNotFoundError):

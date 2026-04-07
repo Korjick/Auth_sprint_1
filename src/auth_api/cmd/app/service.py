@@ -6,13 +6,14 @@ import grpc
 import typer
 import uvicorn
 from Auth_sprint_2.v1 import auth_pb2_grpc
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.responses import ORJSONResponse
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from auth_api.internal.adapters.input.grpc.auth.v1.auth_service import AuthGrpcService
 from auth_api.internal.adapters.input.http import base_exception_handlers
+from auth_api.internal.adapters.input.http.dependencies import api_rate_limit
 from auth_api.internal.adapters.input.http.middlewares.request_middleware import (
     RequestContextMiddleware,
 )
@@ -22,6 +23,9 @@ from auth_api.internal.adapters.output.redis.cache_provider import RedisCachePro
 from auth_api.internal.infrastructure.jwt import PyJWTTokenProvider
 from auth_api.internal.infrastructure.logger import StructlogLogger
 from auth_api.internal.infrastructure.password import WerkzeugHashProvider
+from auth_api.internal.infrastructure.rate_limiter import (
+    RedisFixedWindowRateLimiter,
+)
 from auth_api.internal.infrastructure.settings import Settings
 from auth_api.internal.infrastructure.telemetry import (
     setup_telemetry,
@@ -30,6 +34,10 @@ from auth_api.internal.infrastructure.telemetry import (
 from auth_api.internal.infrastructure.time_provider import UtcTimeProvider
 from auth_api.internal.infrastructure.uow import SqlAlchemyUnitOfWork
 from auth_api.internal.ports.output.logger import Logger
+from auth_api.internal.ports.output.rate_limiter import (
+    FixedWindowLimit,
+    RateLimitConfig,
+)
 
 service_cli = typer.Typer(
     name="auth",
@@ -40,6 +48,29 @@ service_cli = typer.Typer(
 
 def _create_app(env_file: str | None = None) -> FastAPI:
     settings = Settings.from_env(env_file)
+    rate_limit_config = RateLimitConfig(
+        enabled=settings.rate_limit_enabled,
+        api_ip=FixedWindowLimit(
+            limit=settings.rate_limit_api_ip_limit,
+            window_sec=settings.rate_limit_api_ip_window_sec,
+        ),
+        signup_ip=FixedWindowLimit(
+            limit=settings.rate_limit_signup_ip_limit,
+            window_sec=settings.rate_limit_signup_ip_window_sec,
+        ),
+        login_ip=FixedWindowLimit(
+            limit=settings.rate_limit_login_ip_limit,
+            window_sec=settings.rate_limit_login_ip_window_sec,
+        ),
+        login_key_ip=FixedWindowLimit(
+            limit=settings.rate_limit_login_key_ip_limit,
+            window_sec=settings.rate_limit_login_key_ip_window_sec,
+        ),
+        refresh_user=FixedWindowLimit(
+            limit=settings.rate_limit_refresh_user_limit,
+            window_sec=settings.rate_limit_refresh_user_window_sec,
+        ),
+    )
     StructlogLogger.configure(
         json_logs=settings.log_json,
         log_level=settings.log_level,
@@ -91,6 +122,7 @@ def _create_app(env_file: str | None = None) -> FastAPI:
         openapi_url="/api/openapi.json",
         description="Authentication API service",
     )
+    app.state.settings = settings
     app.state.logger = app_logger
     app.add_middleware(RequestContextMiddleware)
     setup_telemetry(app=app, settings=settings, db_engine=db_engine)
@@ -102,7 +134,16 @@ def _create_app(env_file: str | None = None) -> FastAPI:
 
     app.state.cache_provider = RedisCacheProvider(redis_client,
                                                   settings.project_name)
-    app.state.time_provider = UtcTimeProvider()
+    time_provider = UtcTimeProvider()
+    app.state.rate_limiter = RedisFixedWindowRateLimiter(
+        redis_client=redis_client,
+        project_name=settings.project_name,
+        logger=app_logger.branch(component="rate_limiter"),
+        config=rate_limit_config,
+        time_provider=time_provider,
+        fail_open=settings.rate_limit_fail_open,
+    )
+    app.state.time_provider = time_provider
     app.state.token_provider = PyJWTTokenProvider(
         settings.jwt_secret_key,
         settings.jwt_algorithm,
@@ -115,8 +156,16 @@ def _create_app(env_file: str | None = None) -> FastAPI:
     app.state.uow = SqlAlchemyUnitOfWork(db_session_factory)
 
     base_exception_handlers.setup_exception_handlers(app)
-    app.include_router(user_routes.router, prefix="/api/v1")
-    app.include_router(role_routes.router, prefix="/api/v1")
+    app.include_router(
+        user_routes.router,
+        prefix="/api/v1",
+        dependencies=[Depends(api_rate_limit)],
+    )
+    app.include_router(
+        role_routes.router,
+        prefix="/api/v1",
+        dependencies=[Depends(api_rate_limit)],
+    )
 
     return app
 

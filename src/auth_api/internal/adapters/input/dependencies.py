@@ -2,6 +2,7 @@
 
 from auth_api.internal.ports.output.hash_provider import HashProvider
 from auth_api.internal.ports.output.logger import Logger
+from auth_api.internal.ports.output.rate_limiter import RateLimiter
 from auth_api.internal.ports.output.time_provider import TimeProvider
 from auth_api.internal.ports.output.token_provider import TokenProvider
 from auth_api.internal.ports.output.uow import UnitOfWork
@@ -26,3 +27,6 @@ def get_time_provider(request: Request) -> TimeProvider:
 def get_logger(request: Request) -> Logger:
     return request.app.state.logger
 
+
+def get_rate_limiter(request: Request) -> RateLimiter:
+    return request.app.state.rate_limiter

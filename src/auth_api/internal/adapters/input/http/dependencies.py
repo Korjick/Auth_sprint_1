@@ -3,9 +3,14 @@
 from fastapi import Request, Depends, Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-from auth_api.internal.adapters.input.dependencies import get_token_provider
+from auth_api.internal.adapters.input.dependencies import (
+    get_rate_limiter,
+    get_token_provider,
+)
 from auth_api.internal.core.domain.models.role.role import ADMIN_ROLE_NAME
 from auth_api.internal.pkg.errors import ForbiddenError, UnauthorizedError
+from auth_api.internal.pkg.errors import RateLimitExceededError
+from auth_api.internal.ports.output.rate_limiter import RateLimiter
 from auth_api.internal.ports.output.token_provider import TokenProvider, \
     DecodedTokenData
 
@@ -83,3 +88,43 @@ def role_required_or_superuser(allowed_roles: list[str]):
 
 admin_only = role_required_or_superuser([ADMIN_ROLE_NAME])
 
+
+async def enforce_limit(
+        limiter: RateLimiter,
+        bucket: str,
+        identifier: str,
+        limit: int,
+        window_sec: int,
+) -> None:
+    decision = await limiter.hit(
+        key=f"{bucket}:{identifier}",
+        limit=limit,
+        window_sec=window_sec,
+    )
+    if decision.allowed:
+        return
+
+    raise RateLimitExceededError(
+        limit=decision.limit,
+        retry_after=decision.retry_after,
+        reset_at=decision.reset_at,
+        bucket=bucket,
+    )
+
+
+async def api_rate_limit(
+        request: Request,
+        limiter: Annotated[
+            RateLimiter, Depends(get_rate_limiter)
+        ],
+) -> None:
+    config = limiter.config
+    if not config.enabled:
+        return
+    await enforce_limit(
+        limiter=limiter,
+        bucket="api_ip",
+        identifier=request.client.host if request.client else "unknown",
+        limit=config.api_ip.limit,
+        window_sec=config.api_ip.window_sec,
+    )

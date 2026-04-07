@@ -98,6 +98,33 @@ Swagger-документация: `http://localhost:8080/api/openapi`
 
 Для контейнерного запуска `auth_api` endpoint автоматически переопределяется на `http://jaeger:4317` в `docker-compose.yaml`.
 
+## Rate limiting
+
+В `auth_api` добавлен Redis-based fixed-window rate limiting:
+
+- Глобальный лимит для HTTP-роутов `/api/v1/*` по IP.
+- Дополнительные лимиты:
+  - `POST /api/v1/user/signup` — по IP.
+  - `POST /api/v1/user/login` — по IP и по паре `login+IP`.
+  - `POST /api/v1/user/refresh` — по `user_id`.
+
+При превышении лимита API возвращает `429 Too Many Requests` с заголовками:
+
+- `Retry-After`
+- `X-RateLimit-Limit`
+- `X-RateLimit-Remaining`
+- `X-RateLimit-Reset`
+
+Настройки:
+
+- `RATE_LIMIT_ENABLED=true|false`
+- `RATE_LIMIT_FAIL_OPEN=true|false`
+- `RATE_LIMIT_API_IP_LIMIT`, `RATE_LIMIT_API_IP_WINDOW_SEC`
+- `RATE_LIMIT_SIGNUP_IP_LIMIT`, `RATE_LIMIT_SIGNUP_IP_WINDOW_SEC`
+- `RATE_LIMIT_LOGIN_IP_LIMIT`, `RATE_LIMIT_LOGIN_IP_WINDOW_SEC`
+- `RATE_LIMIT_LOGIN_KEY_IP_LIMIT`, `RATE_LIMIT_LOGIN_KEY_IP_WINDOW_SEC`
+- `RATE_LIMIT_REFRESH_USER_LIMIT`, `RATE_LIMIT_REFRESH_USER_WINDOW_SEC`
+
 ## CLI-команды
 
 ```

@@ -1,4 +1,4 @@
-﻿import uuid
+import uuid
 import datetime
 
 import pytest
@@ -29,7 +29,7 @@ async def session_repo(db_session):
 
 @pytest_asyncio.fixture
 async def test_user(user_repo):
-    """РЎРѕР·РґР°С‘С‚ С‚РµСЃС‚РѕРІРѕРіРѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ Рё РІРѕР·РІСЂР°С‰Р°РµС‚ РґРѕРјРµРЅРЅСѓСЋ РјРѕРґРµР»СЊ."""
+    """Создаёт тестового пользователя и возвращает доменную модель."""
     return await user_repo.save_user(UserCreate(
         login=f"session_user_{uuid.uuid4().hex[:8]}",
         password_hash="hashed",
@@ -41,7 +41,7 @@ async def test_user(user_repo):
 
 @pytest_asyncio.fixture(autouse=True)
 async def _clean_sessions(db_session):
-    """РћС‡РёСЃС‚РєР° С‚Р°Р±Р»РёС† РїРѕСЃР»Рµ РєР°Р¶РґРѕРіРѕ С‚РµСЃС‚Р°."""
+    """Очистка таблиц после каждого теста."""
     yield
     await db_session.execute(text("DELETE FROM service.sessions"))
     await db_session.execute(text("DELETE FROM service.user_roles"))
@@ -61,12 +61,12 @@ def _session_create(user_id: uuid.UUID, **overrides) -> SessionCreate:
 
 
 class TestCreateSession:
-    """РўРµСЃС‚С‹ СЃРѕР·РґР°РЅРёСЏ СЃРµСЃСЃРёРё."""
+    """Тесты создания сессии."""
 
     @pytest.mark.asyncio
     async def test_create_session_returns_domain_session(
             self, session_repo, test_user):
-        """create_session РІРѕР·РІСЂР°С‰Р°РµС‚ РґРѕРјРµРЅРЅСѓСЋ РјРѕРґРµР»СЊ Session."""
+        """create_session возвращает доменную модель Session."""
         sc = _session_create(test_user.id)
         session = await session_repo.create_session(sc)
 
@@ -77,11 +77,11 @@ class TestCreateSession:
 
 
 class TestGetSessionByJti:
-    """РўРµСЃС‚С‹ РїРѕРёСЃРєР° СЃРµСЃСЃРёРё РїРѕ JTI."""
+    """Тесты поиска сессии по JTI."""
 
     @pytest.mark.asyncio
     async def test_get_existing_session(self, session_repo, test_user):
-        """РЎСѓС‰РµСЃС‚РІСѓСЋС‰Р°СЏ СЃРµСЃСЃРёСЏ РЅР°С…РѕРґРёС‚СЃСЏ РїРѕ jti."""
+        """Существующая сессия находится по jti."""
         sc = _session_create(test_user.id)
         created = await session_repo.create_session(sc)
 
@@ -91,18 +91,18 @@ class TestGetSessionByJti:
 
     @pytest.mark.asyncio
     async def test_get_nonexistent_session(self, session_repo):
-        """РќРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰Р°СЏ СЃРµСЃСЃРёСЏ РІС‹Р·С‹РІР°РµС‚ EntityNotFoundError."""
+        """Несуществующая сессия вызывает EntityNotFoundError."""
         with pytest.raises(EntityNotFoundError):
             await session_repo.get_session_by_jti(uuid.uuid4())
 
 
 class TestUpdateSession:
-    """РўРµСЃС‚С‹ РѕР±РЅРѕРІР»РµРЅРёСЏ СЃРµСЃСЃРёРё."""
+    """Тесты обновления сессии."""
 
     @pytest.mark.asyncio
     async def test_update_session_jti_and_expiry(
             self, session_repo, test_user):
-        """РћР±РЅРѕРІР»РµРЅРёРµ jti Рё expire_at СЃРµСЃСЃРёРё."""
+        """Обновление jti и expire_at сессии."""
         sc = _session_create(test_user.id)
         created = await session_repo.create_session(sc)
 
@@ -123,7 +123,7 @@ class TestUpdateSession:
 
     @pytest.mark.asyncio
     async def test_update_nonexistent_session(self, session_repo, test_user):
-        """РћР±РЅРѕРІР»РµРЅРёРµ РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РµР№ СЃРµСЃСЃРёРё РІС‹Р·С‹РІР°РµС‚ РѕС€РёР±РєСѓ."""
+        """Обновление несуществующей сессии вызывает ошибку."""
         fake_session = Session(
             oid=uuid.uuid4(),
             user_id=test_user.id,
@@ -136,11 +136,11 @@ class TestUpdateSession:
 
 
 class TestDeleteSession:
-    """РўРµСЃС‚С‹ СѓРґР°Р»РµРЅРёСЏ СЃРµСЃСЃРёР№."""
+    """Тесты удаления сессий."""
 
     @pytest.mark.asyncio
     async def test_delete_session_by_jti(self, session_repo, test_user):
-        """РЎРµСЃСЃРёСЏ СѓРґР°Р»СЏРµС‚СЃСЏ РїРѕ jti."""
+        """Сессия удаляется по jti."""
         sc = _session_create(test_user.id)
         created = await session_repo.create_session(sc)
 
@@ -151,7 +151,7 @@ class TestDeleteSession:
 
     @pytest.mark.asyncio
     async def test_delete_by_user_id(self, session_repo, test_user):
-        """Р’СЃРµ СЃРµСЃСЃРёРё РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ СѓРґР°Р»СЏСЋС‚СЃСЏ."""
+        """Все сессии пользователя удаляются."""
         await session_repo.create_session(
             _session_create(test_user.id, jti=uuid.uuid4()))
         await session_repo.create_session(
@@ -165,7 +165,7 @@ class TestDeleteSession:
     @pytest.mark.asyncio
     async def test_delete_by_user_id_and_fingerprint(
             self, session_repo, test_user):
-        """РЈРґР°Р»РµРЅРёРµ СЃРµСЃСЃРёР№ РєРѕРЅРєСЂРµС‚РЅРѕРіРѕ СѓСЃС‚СЂРѕР№СЃС‚РІР°."""
+        """Удаление сессий конкретного устройства."""
         fp1 = "Chrome|en|127.0.0.1"
         fp2 = "Firefox|ru|10.0.0.1"
         await session_repo.create_session(
@@ -184,17 +184,17 @@ class TestDeleteSession:
 
 
 class TestGetSessionsByUserId:
-    """РўРµСЃС‚С‹ РїРѕР»СѓС‡РµРЅРёСЏ СЃРїРёСЃРєР° СЃРµСЃСЃРёР№ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ."""
+    """Тесты получения списка сессий пользователя."""
 
     @pytest.mark.asyncio
     async def test_get_sessions_empty(self, session_repo, test_user):
-        """РџСѓСЃС‚РѕР№ СЃРїРёСЃРѕРє СЃРµСЃСЃРёР№ РґР»СЏ РЅРѕРІРѕРіРѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ."""
+        """Пустой список сессий для нового пользователя."""
         sessions = await session_repo.get_sessions_by_user_id(test_user.id)
         assert sessions == []
 
     @pytest.mark.asyncio
     async def test_get_sessions_returns_all(self, session_repo, test_user):
-        """Р’РѕР·РІСЂР°С‰Р°СЋС‚СЃСЏ РІСЃРµ СЃРµСЃСЃРёРё РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ."""
+        """Возвращаются все сессии пользователя."""
         await session_repo.create_session(
             _session_create(test_user.id, jti=uuid.uuid4()))
         await session_repo.create_session(

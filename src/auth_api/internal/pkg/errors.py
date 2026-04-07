@@ -104,6 +104,28 @@ class ForbiddenError(BaseAppError):
         return "access to resource is forbidden"
 
 
+class RateLimitExceededError(BaseAppError):
+    code = "RATE_LIMIT_EXCEEDED"
+
+    def __init__(
+            self,
+            limit: int,
+            retry_after: int,
+            reset_at: int,
+            bucket: str,
+    ) -> None:
+        super().__init__(
+            limit=limit,
+            remaining=0,
+            retry_after=retry_after,
+            reset_at=reset_at,
+            bucket=bucket,
+        )
+
+    def get_message(self) -> str:
+        return "too many requests"
+
+
 # Database / infrastructure errors
 
 class DatabaseError(BaseAppError):

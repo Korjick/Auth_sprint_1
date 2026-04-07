@@ -13,6 +13,7 @@ from auth_api.internal.pkg.errors import (
     InvalidCredentialsError,
     UnauthorizedError,
     ForbiddenError,
+    RateLimitExceededError,
     DatabaseError,
     InfrastructureError,
 )
@@ -67,6 +68,22 @@ def setup_exception_handlers(app: FastAPI) -> None:
         return ORJSONResponse(
             status_code=status.HTTP_403_FORBIDDEN,
             content=exc.to_dict(),
+        )
+
+    @app.exception_handler(RateLimitExceededError)
+    async def rate_limit_handler(
+            request: Request, exc: RateLimitExceededError):
+        details = exc.details
+        headers = {
+            "Retry-After": str(details.get("retry_after", 0)),
+            "X-RateLimit-Limit": str(details.get("limit", 0)),
+            "X-RateLimit-Remaining": str(details.get("remaining", 0)),
+            "X-RateLimit-Reset": str(details.get("reset_at", 0)),
+        }
+        return ORJSONResponse(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            content=exc.to_dict(),
+            headers=headers,
         )
 
     @app.exception_handler(DatabaseError)

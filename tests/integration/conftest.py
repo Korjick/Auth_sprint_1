@@ -1,4 +1,4 @@
-﻿from typing import AsyncGenerator
+from typing import AsyncGenerator
 
 import pytest
 import pytest_asyncio
@@ -17,7 +17,7 @@ from auth_api.internal.adapters.output.postgres.models import Base
 
 @pytest.fixture(scope="session")
 def postgres_container():
-    """РџРѕРґРЅРёРјР°РµС‚ PostgreSQL РєРѕРЅС‚РµР№РЅРµСЂ РЅР° РІСЂРµРјСЏ С‚РµСЃС‚РѕРІРѕР№ СЃРµСЃСЃРёРё."""
+    """Поднимает PostgreSQL контейнер на время тестовой сессии."""
     with PostgresContainer(
         image="postgres:16-alpine",
         username="test",
@@ -29,14 +29,14 @@ def postgres_container():
 
 @pytest.fixture(scope="session")
 def redis_container():
-    """РџРѕРґРЅРёРјР°РµС‚ Redis РєРѕРЅС‚РµР№РЅРµСЂ РЅР° РІСЂРµРјСЏ С‚РµСЃС‚РѕРІРѕР№ СЃРµСЃСЃРёРё."""
+    """Поднимает Redis контейнер на время тестовой сессии."""
     with RedisContainer() as r:
         yield r
 
 
 @pytest.fixture(scope="session")
 def postgres_url(postgres_container) -> str:
-    """Async DSN РґР»СЏ РїРѕРґРєР»СЋС‡РµРЅРёСЏ Рє С‚РµСЃС‚РѕРІРѕРјСѓ PostgreSQL."""
+    """Async DSN для подключения к тестовому PostgreSQL."""
     host = postgres_container.get_container_host_ip()
     port = postgres_container.get_exposed_port(5432)
     return (
@@ -46,7 +46,7 @@ def postgres_url(postgres_container) -> str:
 
 @pytest.fixture(scope="session")
 def redis_url(redis_container) -> str:
-    """URL РґР»СЏ РїРѕРґРєР»СЋС‡РµРЅРёСЏ Рє С‚РµСЃС‚РѕРІРѕРјСѓ Redis."""
+    """URL для подключения к тестовому Redis."""
     host = redis_container.get_container_host_ip()
     port = redis_container.get_exposed_port(6379)
     return f"redis://{host}:{port}/0"
@@ -54,7 +54,7 @@ def redis_url(redis_container) -> str:
 
 @pytest_asyncio.fixture(scope="session", loop_scope="session")
 async def async_engine(postgres_url):
-    """РЎРѕР·РґР°С‘С‚ async engine Рё РёРЅРёС†РёР°Р»РёР·РёСЂСѓРµС‚ СЃС…РµРјСѓ + С‚Р°Р±Р»РёС†С‹."""
+    """Создаёт async engine и инициализирует схему + таблицы."""
     engine = create_async_engine(postgres_url, echo=False)
 
     async with engine.begin() as conn:
@@ -71,7 +71,7 @@ async def async_engine(postgres_url):
 
 @pytest_asyncio.fixture(scope="session", loop_scope="session")
 async def db_session_factory(async_engine) -> async_sessionmaker:
-    """Р¤Р°Р±СЂРёРєР° СЃРµСЃСЃРёР№ SQLAlchemy."""
+    """Фабрика сессий SQLAlchemy."""
     return async_sessionmaker(
         async_engine, class_=AsyncSession, expire_on_commit=False
     )
@@ -79,7 +79,7 @@ async def db_session_factory(async_engine) -> async_sessionmaker:
 
 @pytest_asyncio.fixture(loop_scope="session")
 async def db_session(db_session_factory) -> AsyncGenerator[AsyncSession, None]:
-    """РћРґРЅР° СЃРµСЃСЃРёСЏ Р‘Р” СЃ РѕС‚РєР°С‚РѕРј РїРѕСЃР»Рµ РєР°Р¶РґРѕРіРѕ С‚РµСЃС‚Р°."""
+    """Одна сессия БД с откатом после каждого теста."""
     async with db_session_factory() as session:
         yield session
         await session.rollback()
@@ -87,7 +87,7 @@ async def db_session(db_session_factory) -> AsyncGenerator[AsyncSession, None]:
 
 @pytest_asyncio.fixture(loop_scope="session")
 async def redis_client(redis_url) -> AsyncGenerator[Redis, None]:
-    """Async Redis РєР»РёРµРЅС‚ вЂ” РЅРѕРІС‹Р№ РЅР° РєР°Р¶РґС‹Р№ С‚РµСЃС‚."""
+    """Async Redis клиент — новый на каждый тест."""
     client = Redis.from_url(redis_url, decode_responses=True)
     await client.flushdb()
     yield client

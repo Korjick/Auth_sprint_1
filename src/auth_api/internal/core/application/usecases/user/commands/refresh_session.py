@@ -1,10 +1,12 @@
-﻿from auth_api.internal.core.application.services.token_pair import \
+import datetime
+
+from auth_api.internal.core.application.services.token_pair import \
     TokenPairService
 from auth_api.internal.pkg.errors import ForbiddenError
 from auth_api.internal.ports.input.user.refresh_session_handler import (
+    LoggedInUser,
     RefreshSession,
     RefreshSessionHandlerProtocol,
-    LoggedInUser,
 )
 from auth_api.internal.ports.output.time_provider import TimeProvider
 from auth_api.internal.ports.output.uow import UnitOfWork
@@ -25,7 +27,13 @@ class RefreshSessionUseCase(RefreshSessionHandlerProtocol):
         async with self._uow:
             session = await self._uow.sessions.get_session_by_jti(
                 jti=refresh_session.jti)
-            if session.expire_at < now:
+
+            expires_at = session.expire_at
+            if expires_at.tzinfo is None:
+                expires_at = expires_at.replace(
+                    tzinfo=datetime.timezone.utc,
+                )
+            if expires_at < now:
                 raise ForbiddenError()
 
             if session.device_fingerprint != \
@@ -43,4 +51,3 @@ class RefreshSessionUseCase(RefreshSessionHandlerProtocol):
 
         return LoggedInUser(access_session=token_pair.access_token.token,
                             refresh_session=token_pair.refresh_token.token)
-
