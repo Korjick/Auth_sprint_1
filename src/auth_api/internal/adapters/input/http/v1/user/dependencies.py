@@ -37,6 +37,8 @@ from auth_api.internal.core.application.usecases.user.queries.get_user_by_id imp
     GetUserByIdUseCase
 from auth_api.internal.core.application.usecases.user.queries.get_user_by_login import \
     GetUserByLoginUseCase
+from auth_api.internal.core.application.usecases.user.queries.list_users import \
+    ListUsersUseCase
 from auth_api.internal.ports.input.user.assign_role_handler import \
     AssignRoleHandlerProtocol
 from auth_api.internal.ports.input.user.create_user_handler import \
@@ -49,6 +51,9 @@ from auth_api.internal.ports.input.user.get_user_by_login_handler import \
     GetUserByLoginHandlerProtocol
 from auth_api.internal.ports.input.user.login_user_handler import \
     LoginUserHandlerProtocol
+from auth_api.internal.ports.input.user.list_users_handler import (
+    ListUsersHandlerProtocol,
+)
 from auth_api.internal.ports.input.user.logout_all_handler import \
     LogoutAllHandlerProtocol
 from auth_api.internal.ports.input.user.logout_user_handler import \
@@ -149,6 +154,12 @@ def remove_role_handler(
     uow: UnitOfWork = Depends(get_uow),
 ) -> RemoveRoleHandlerProtocol:
     return RemoveRoleUseCase(uow)
+
+
+def list_users_handler(
+    uow: UnitOfWork = Depends(get_uow),
+) -> ListUsersHandlerProtocol:
+    return ListUsersUseCase(uow)
 
 
 async def signup_rate_limit(

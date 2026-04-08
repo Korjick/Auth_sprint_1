@@ -139,3 +139,12 @@ class PostgresUserRepository(UserRepository):
         await self._db_session.flush()
         return self._to_domain(user_row)
 
+    async def list_users(self) -> list[DomainUser]:
+        result = await self._db_session.execute(
+            select(UserModel)
+            .options(selectinload(UserModel.roles))
+            .order_by(UserModel.created_at.desc())
+        )
+        rows = result.scalars().all()
+        return [self._to_domain(row) for row in rows]
+

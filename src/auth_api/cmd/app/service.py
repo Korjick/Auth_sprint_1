@@ -17,6 +17,7 @@ from auth_api.internal.adapters.input.http.dependencies import api_rate_limit
 from auth_api.internal.adapters.input.http.middlewares.request_middleware import (
     RequestContextMiddleware,
 )
+from auth_api.internal.adapters.input.http.v1.oauth import routes as oauth_routes
 from auth_api.internal.adapters.input.http.v1.role import routes as role_routes
 from auth_api.internal.adapters.input.http.v1.user import routes as user_routes
 from auth_api.internal.adapters.output.redis.cache_provider import RedisCacheProvider
@@ -30,6 +31,10 @@ from auth_api.internal.infrastructure.settings import Settings
 from auth_api.internal.infrastructure.telemetry import (
     setup_telemetry,
     shutdown_telemetry,
+)
+from auth_api.internal.infrastructure.social_auth.google_provider import (
+    GoogleOAuthConfig,
+    GoogleSocialAuthProvider,
 )
 from auth_api.internal.infrastructure.time_provider import UtcTimeProvider
 from auth_api.internal.infrastructure.uow import SqlAlchemyUnitOfWork
@@ -154,6 +159,21 @@ def _create_app(env_file: str | None = None) -> FastAPI:
     )
     app.state.hash_provider = WerkzeugHashProvider()
     app.state.uow = SqlAlchemyUnitOfWork(db_session_factory)
+    app.state.google_social_auth_provider = GoogleSocialAuthProvider(
+        GoogleOAuthConfig(
+            enabled=settings.oauth_google_enabled,
+            client_id=settings.oauth_google_client_id,
+            client_secret=settings.oauth_google_client_secret,
+            redirect_uri=settings.oauth_google_redirect_uri,
+            authorize_url=settings.oauth_google_authorize_url,
+            token_url=settings.oauth_google_token_url,
+            jwks_url=settings.oauth_google_jwks_url,
+            scopes=settings.oauth_google_scopes,
+            issuer_primary=settings.oauth_google_issuer_primary,
+            issuer_secondary=settings.oauth_google_issuer_secondary,
+            http_timeout_sec=settings.oauth_google_http_timeout_sec,
+        )
+    )
 
     base_exception_handlers.setup_exception_handlers(app)
     app.include_router(
@@ -163,6 +183,11 @@ def _create_app(env_file: str | None = None) -> FastAPI:
     )
     app.include_router(
         role_routes.router,
+        prefix="/api/v1",
+        dependencies=[Depends(api_rate_limit)],
+    )
+    app.include_router(
+        oauth_routes.router,
         prefix="/api/v1",
         dependencies=[Depends(api_rate_limit)],
     )

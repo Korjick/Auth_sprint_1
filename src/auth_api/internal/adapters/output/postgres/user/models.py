@@ -41,9 +41,8 @@ class User(Base):
                                             nullable=False,
                                             default=False)
     created_at: Mapped[datetime.datetime] = mapped_column(
-        DateTime,
-        default=lambda: datetime.datetime.now(datetime.timezone.utc).replace(
-            tzinfo=None)
+        DateTime(timezone=True),
+        default=lambda: datetime.datetime.now(datetime.timezone.utc),
     )
 
     roles = relationship(

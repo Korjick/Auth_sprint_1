@@ -14,6 +14,7 @@ from auth_api.internal.adapters.input.http.v1.user.dependencies import (
     create_user_handler,
     get_login_history_handler,
     get_user_by_id_handler,
+    list_users_handler,
     login_rate_limit,
     login_user_handler,
     logout_all_handler,
@@ -54,6 +55,9 @@ from auth_api.internal.ports.input.user.get_user_by_id_handler import (
 )
 from auth_api.internal.ports.input.user.login_user_handler import \
     LoginUser, LoginUserHandlerProtocol
+from auth_api.internal.ports.input.user.list_users_handler import (
+    ListUsersHandlerProtocol,
+)
 from auth_api.internal.ports.input.user.logout_all_handler import (
     LogoutAll,
     LogoutAllHandlerProtocol,
@@ -216,6 +220,9 @@ async def update_user(
         login=user.login,
         first_name=user.first_name,
         last_name=user.last_name,
+        is_active=user.is_active,
+        roles=user.roles,
+        is_superuser=user.is_superuser,
     )
 
 
@@ -258,7 +265,33 @@ async def get_user_info(
         login=user.login,
         first_name=user.first_name,
         last_name=user.last_name,
+        is_active=user.is_active,
+        roles=user.roles,
+        is_superuser=user.is_superuser,
     )
+
+
+@router.get('/admin/list', response_model=list[UserDetailResponse])
+async def list_users_admin(
+        handler: Annotated[
+            ListUsersHandlerProtocol,
+            Depends(list_users_handler),
+        ],
+        _: Annotated[DecodedTokenData, Depends(admin_only)],
+) -> list[UserDetailResponse]:
+    users = await handler.handle()
+    return [
+        UserDetailResponse(
+            id=user.id,
+            login=user.login,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            roles=user.roles,
+            is_superuser=user.is_superuser,
+            is_active=user.is_active,
+        )
+        for user in users
+    ]
 
 
 @router.post('/{user_id}/roles', response_model=UserRoleResponse)
@@ -273,6 +306,18 @@ async def assign_role(
     user = await handler.handle(
         AssignRole(user_id=user_id, role_id=role_request.role_id)
     )
+    return UserRoleResponse(login=user.login, roles=user.roles)
+
+
+@router.get('/{user_id}/roles', response_model=UserRoleResponse)
+async def get_user_roles(
+        user_id: UUID,
+        get_user_handler: Annotated[
+            GetUserByIdHandlerProtocol, Depends(get_user_by_id_handler)
+        ],
+        _: Annotated[DecodedTokenData, Depends(admin_only)],
+) -> UserRoleResponse:
+    user = await get_user_handler.handle(GetUserById(user_id=user_id))
     return UserRoleResponse(login=user.login, roles=user.roles)
 
 

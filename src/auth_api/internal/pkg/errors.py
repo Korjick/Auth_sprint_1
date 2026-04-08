@@ -104,6 +104,17 @@ class ForbiddenError(BaseAppError):
         return "access to resource is forbidden"
 
 
+class FeatureDisabledError(ValidationError):
+    code = "FEATURE_DISABLED"
+
+    def __init__(self, feature: str) -> None:
+        self.feature = feature
+        super().__init__(feature=feature)
+
+    def get_message(self) -> str:
+        return f"{self.feature} is disabled"
+
+
 class RateLimitExceededError(BaseAppError):
     code = "RATE_LIMIT_EXCEEDED"
 
@@ -144,6 +155,8 @@ class InfrastructureError(BaseAppError):
     code = "INFRASTRUCTURE_ERROR"
 
     def __init__(self, service: str, cause: Exception | None = None):
+        self.service = service
+        self.cause = cause
         super().__init__(
             service=service,
             operation=type(cause).__name__ if cause else "unknown")

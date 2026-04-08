@@ -25,6 +25,7 @@ config.set_main_option("sqlalchemy.url", db_url)
 from auth_api.internal.adapters.output.postgres.models import Base
 from auth_api.internal.adapters.output.postgres.role.models import Role  # noqa: F401
 from auth_api.internal.adapters.output.postgres.session.models import Session  # noqa: F401
+from auth_api.internal.adapters.output.postgres.social_identity.models import SocialIdentity  # noqa: F401
 from auth_api.internal.adapters.output.postgres.user.models import User  # noqa: F401
 target_metadata = Base.metadata
 

@@ -108,6 +108,56 @@ class Settings(BaseSettings):
         validation_alias='RATE_LIMIT_REFRESH_USER_WINDOW_SEC',
     )
 
+    # Настройки Google OAuth
+    oauth_state_ttl_sec: int = Field(
+        300,
+        validation_alias="OAUTH_STATE_TTL_SEC",
+    )
+    oauth_google_enabled: bool = Field(
+        False,
+        validation_alias="OAUTH_GOOGLE_ENABLED",
+    )
+    oauth_google_client_id: str = Field(
+        "",
+        validation_alias="OAUTH_GOOGLE_CLIENT_ID",
+    )
+    oauth_google_client_secret: str = Field(
+        "",
+        validation_alias="OAUTH_GOOGLE_CLIENT_SECRET",
+    )
+    oauth_google_redirect_uri: str = Field(
+        "",
+        validation_alias="OAUTH_GOOGLE_REDIRECT_URI",
+    )
+    oauth_google_authorize_url: str = Field(
+        "https://accounts.google.com/o/oauth2/v2/auth",
+        validation_alias="OAUTH_GOOGLE_AUTHORIZE_URL",
+    )
+    oauth_google_token_url: str = Field(
+        "https://oauth2.googleapis.com/token",
+        validation_alias="OAUTH_GOOGLE_TOKEN_URL",
+    )
+    oauth_google_jwks_url: str = Field(
+        "https://www.googleapis.com/oauth2/v3/certs",
+        validation_alias="OAUTH_GOOGLE_JWKS_URL",
+    )
+    oauth_google_scopes: str = Field(
+        "openid email profile",
+        validation_alias="OAUTH_GOOGLE_SCOPES",
+    )
+    oauth_google_issuer_primary: str = Field(
+        "https://accounts.google.com",
+        validation_alias="OAUTH_GOOGLE_ISSUER_PRIMARY",
+    )
+    oauth_google_issuer_secondary: str = Field(
+        "accounts.google.com",
+        validation_alias="OAUTH_GOOGLE_ISSUER_SECONDARY",
+    )
+    oauth_google_http_timeout_sec: float = Field(
+        5.0,
+        validation_alias="OAUTH_GOOGLE_HTTP_TIMEOUT_SEC",
+    )
+
     @classmethod
     def from_env(cls, env_file: str | None = None) -> 'Settings':
         if not env_file:

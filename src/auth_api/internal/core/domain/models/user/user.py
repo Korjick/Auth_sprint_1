@@ -18,11 +18,10 @@ class User(BaseAggregate[uuid.UUID]):
                  password_hash: str,
                  first_name: str,
                  last_name: str,
+                 created_at: datetime.datetime,
                  roles: list[str] | None = None,
                  is_superuser: bool = False,
-                 is_active: bool = False,
-                 created_at: datetime.datetime =
-                 datetime.datetime.now(datetime.timezone.utc)):
+                 is_active: bool = False):
         if not login:
             raise ParamEmptyError(param='login')
         if not password_hash:
@@ -46,4 +45,3 @@ class User(BaseAggregate[uuid.UUID]):
         self.created_at = created_at
         self.is_superuser = is_superuser
         self.is_active = is_active
-

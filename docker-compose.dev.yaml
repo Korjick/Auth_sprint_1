@@ -2,14 +2,21 @@ services:
   postgres:
     env_file:
       - .env.sample
-    image: postgres:18.1-alpine3.23
+    build:
+      context: .
+      dockerfile: docker/postgres/Dockerfile
+      args:
+        PG_PARTMAN_BGW_DBNAME: ${POSTGRES_DB:-auth}
+        PG_PARTMAN_BGW_INTERVAL: ${PG_PARTMAN_BGW_INTERVAL:-3600}
+        PG_PARTMAN_BGW_ROLE: ${POSTGRES_USER:-postgres}
+    image: auth_api-postgres:18-partman
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/data/postgres
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -d postgres" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-auth}" ]
       interval: 30s
       timeout: 10s
       retries: 5

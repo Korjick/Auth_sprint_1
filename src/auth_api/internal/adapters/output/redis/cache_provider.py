@@ -16,3 +16,6 @@ class RedisCacheProvider(CacheProvider):
     async def get_from_cache(self, key: str) -> str | int | float | None:
         return await self.redis_client.get(name=f"{self.project_name}:{key}")
 
+    async def pop_from_cache(self, key: str) -> str | int | float | None:
+        return await self.redis_client.getdel(name=f"{self.project_name}:{key}")
+

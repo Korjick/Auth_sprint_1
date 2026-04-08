@@ -21,6 +21,8 @@ class Session(Base):
     jti: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True),
                                            index=True)
     device_fingerprint: Mapped[str]
-    expires_at: Mapped[datetime.datetime] = mapped_column(DateTime,
-                                                          nullable=False)
+    expires_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+    )
 

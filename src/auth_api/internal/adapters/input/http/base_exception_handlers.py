@@ -98,7 +98,15 @@ def setup_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(InfrastructureError)
     async def infrastructure_error_handler(
             request: Request, exc: InfrastructureError):
-        logger.error("Infrastructure error: %s", exc.cause, exc_info=exc.cause)
+        cause = exc.cause
+        if cause is None:
+            logger.error("Infrastructure error: %s", exc)
+        else:
+            logger.error(
+                "Infrastructure error: %s",
+                cause,
+                exc_info=(type(cause), cause, cause.__traceback__),
+            )
         return ORJSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content=exc.to_dict(),
@@ -127,7 +135,10 @@ def setup_exception_handlers(app: FastAPI) -> None:
     async def unhandled_exception_handler(
             request: Request, exc: Exception):
         logger.critical("Unhandled exception: %s", exc, exc_info=exc)
-        wrapped = BaseAppError(cause=exc)
+        wrapped = BaseAppError(
+            error=type(exc).__name__,
+            detail=str(exc),
+        )
         return ORJSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content=wrapped.to_dict(),

@@ -11,6 +11,7 @@ from auth_api.internal.pkg.errors import (
     InvalidCredentialsError,
     UnauthorizedError,
     ForbiddenError,
+    FeatureDisabledError,
     RateLimitExceededError,
     DatabaseError,
     InfrastructureError,
@@ -156,6 +157,13 @@ class TestErrors:
         """InfrastructureError содержит имя сервиса."""
         err = InfrastructureError(service="redis")
         assert err.code == "INFRASTRUCTURE_ERROR"
+        assert err.cause is None
+
+    def test_feature_disabled_error(self):
+        err = FeatureDisabledError(feature="google_oauth")
+        assert err.code == "FEATURE_DISABLED"
+        assert "google_oauth is disabled" in err.get_message()
+        assert err.details["feature"] == "google_oauth"
 
     def test_validation_error_code(self):
         """ValidationError — базовый класс для ошибок валидации."""

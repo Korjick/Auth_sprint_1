@@ -15,6 +15,9 @@ class FakeCacheProvider(CacheProvider):
     async def get_from_cache(self, key: str) -> str | None:
         return self._store.get(key)
 
+    async def pop_from_cache(self, key: str) -> str | None:
+        return self._store.pop(key, None)
+
 
 class FakeTimeProvider(TimeProvider):
     def __init__(self, fixed_now: datetime.datetime | None = None):

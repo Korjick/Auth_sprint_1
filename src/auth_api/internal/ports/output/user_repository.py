@@ -39,3 +39,6 @@ class UserRepository(Protocol):
                           role_id: uuid.UUID) -> User:
         pass
 
+    async def list_users(self) -> list[User]:
+        pass
+

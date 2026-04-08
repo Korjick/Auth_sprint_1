@@ -50,6 +50,9 @@ class UserDetailResponse(BaseModel):
     login: str
     first_name: str
     last_name: str
+    is_active: bool
+    is_superuser: bool
+    roles: list[str]
 
 
 class UserRoleResponse(BaseModel):
