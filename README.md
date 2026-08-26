@@ -1,6 +1,6 @@
 ﻿# Auth Service
 
-https://github.com/Korjick/Auth_sprint_1
+Part of: https://github.com/topics/korjick-python-microservice-cinema
 
 Сервис аутентификации и авторизации для онлайн-кинотеатра. Реализует
 регистрацию, аутентификацию по JWT, управление сессиями и систему ролей.
